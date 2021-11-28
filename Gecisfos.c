@@ -87,6 +87,8 @@ megallo** metro_beiro(megallo** p, FILE* fajl){
     return p;
 }
 
+faszxd
+
 int main(){
     FILE* metrok_file=metro_megnyito("bemeneti1.txt");
     megallo** metro;
