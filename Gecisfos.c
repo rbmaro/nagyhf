@@ -113,6 +113,7 @@ megallo** metro_beiro1(megallo** p, FILE* fajl){
             nev[karakter]='\0';
             p[metrok_szama]=lancolo(nev,p[metrok_szama]);
             karakter=0;
+            p[metrok_szama]->prev=NULL;
             metrok_szama++;
             p=metro_foglalo(p,metrok_szama+1);
             p[metrok_szama]=NULL;
@@ -179,6 +180,7 @@ megallo** metro_beiro2(megallo** p, FILE* fajl){
 }
 
 megallo* elokeszito(megallo **p, char* indulas){
+
     int faszom=0;   
     int index=0;
     megallo* csucs;
@@ -210,6 +212,7 @@ megallo* elokeszito(megallo **p, char* indulas){
     return jocsucs;
 }
 
+/*
 int csomopont(int* index,megallo* csucs,megallo** p,megallo** ujcsucs){
     int ind=0;
     megallo* mozgo;
@@ -297,6 +300,72 @@ void menetrend(megallo** p,megallo* csucs,int index){
         beirnext(p,csucs);
         menetrend(p,csucs->next,index); //kovetkezo es gyerekei
     }
+}
+*/
+
+int fel(megallo**p, megallo* csucs){
+    int index=0;
+    int egyez;
+    if (csucs==NULL)
+    {
+        return 0;
+    }
+    egyez=strcmp(dijk[index].megallok_nevei,csucs->megallo_nev);
+    while(egyez!=0)
+    {
+        index++;
+        egyez=strcmp(dijk[index].megallok_nevei,csucs->megallo_nev);  
+    }
+    if(!dijk[index].bejart){
+        dijk[index].menetido=csucs->menetido_f;
+        dijk[index].bejart=1;
+    }
+    return 1;
+}
+
+int le(megallo**p, megallo* csucs){
+    int index=0;
+    if (csucs==NULL)
+    {
+        return 0;
+    }
+    int egyez=strcmp(dijk[index].megallok_nevei,csucs->megallo_nev);
+    while(!egyez)
+    {
+        egyez=strcmp(dijk[index].megallok_nevei,csucs->megallo_nev);  
+        index++;
+    }
+    if(!dijk[index].bejart){
+        dijk[index].menetido=csucs->menetido_l;
+        dijk[index].bejart=1;
+    }
+    return 1;
+}
+
+
+void menetrend(megallo** p,megallo* csucs,int index){
+    int irany=0;
+    int felfele=1;
+    int lefele=1;
+    megallo* csucsontul=csucs;
+    if (irany==0)
+    {
+        while(felfele==1){
+            csucsontul=csucsontul->prev;
+            felfele=fel(*p,csucsontul);
+        }
+        irany++;
+    }
+    csucsontul=csucs;
+    if (irany==1)
+    {
+        while(lefele==1){
+            csucsontul=csucsontul->next;
+            lefele=le(*p,csucsontul);
+        }
+        irany++;
+    }
+    //átszállásos esetben//
 }
 
 int main(){
