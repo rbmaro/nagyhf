@@ -12,8 +12,7 @@ typedef struct megallo{
 }megallo;
 
 typedef struct dijkstra{
-    char* megallok_nevei;
-    char* vonal;
+    megallo* megallo;
     int menetido;
     int atszallasok_szama;
     int bejart;
@@ -22,7 +21,7 @@ typedef struct dijkstra{
 dijkstra dijk[500];
 
 void clear(){
-    system("cls");
+    system("clear");
 }
 
 int freeway(){
@@ -199,8 +198,7 @@ megallo* elokeszito(megallo **p, char* indulas){
         while(csucs!=NULL){
             if (strcmp(indulas, csucs->megallo_nev)==0)
             {
-                dijk[faszom].megallok_nevei=csucs->megallo_nev;
-                dijk[faszom].vonal=csucs->metro_vonal;
+                dijk[faszom].megallo=csucs;
                 dijk[faszom].menetido=0;
                 dijk[faszom].atszallasok_szama=0;
                 dijk[faszom].bejart=0;
@@ -209,8 +207,7 @@ megallo* elokeszito(megallo **p, char* indulas){
             }
             else
             {
-                dijk[faszom].megallok_nevei=csucs->megallo_nev;
-                dijk[faszom].vonal=csucs->metro_vonal;
+                dijk[faszom].megallo=csucs;
                 dijk[faszom].menetido=1000;
                 dijk[faszom].atszallasok_szama=0;
                 dijk[faszom].bejart=0;
@@ -226,7 +223,6 @@ megallo* elokeszito(megallo **p, char* indulas){
 
 int fel(megallo* csucs,megallo* csucsontul){
     int index=0;
-    int egyez;
     int honnan;
     int hova;
     if(csucs==NULL) return 0;
@@ -234,28 +230,18 @@ int fel(megallo* csucs,megallo* csucsontul){
     {
         return 0;
     }
-    egyez=strcmp(dijk[index].megallok_nevei,csucs->megallo_nev);
-    egyez=strcmp(dijk[index].vonal,csucs->metro_vonal);
+    while(dijk[index].megallo!=csucs)
+    {
+        index++;  
+    }
     honnan=index;
-    while(egyez!=0)
-    {
-        index++;
-        egyez=strcmp(dijk[index].megallok_nevei,csucs->megallo_nev);
-        egyez=strcmp(dijk[index].vonal,csucsontul->metro_vonal);
-        honnan=index;  
-    }
     index=0;
-    egyez=strcmp(dijk[index].megallok_nevei,csucsontul->megallo_nev);
-    egyez=strcmp(dijk[index].vonal,csucsontul->metro_vonal);
-    hova=index;
-    while(egyez!=0)
+    while(dijk[index].megallo!=csucsontul)
     {
         index++;
-        egyez=strcmp(dijk[index].megallok_nevei,csucsontul->megallo_nev);
-        egyez=strcmp(dijk[index].vonal,csucsontul->metro_vonal);
-        hova=index;  
     }
-    if(dijk[hova].menetido<csucsontul->menetido_f+dijk[honnan].menetido || !dijk[hova].bejart){
+    hova=index;
+    if(!dijk[hova].bejart){
         dijk[hova].menetido=csucsontul->menetido_f+dijk[honnan].menetido;
         dijk[hova].bejart=1;
         dijk[hova].atszallasok_szama=dijk[honnan].atszallasok_szama;
@@ -265,7 +251,6 @@ int fel(megallo* csucs,megallo* csucsontul){
 
 int le(megallo* csucs,megallo* csucsontul){
     int index=0;
-    int egyez;
     int honnan;
     int hova;
     if(csucs==NULL) return 0;
@@ -273,28 +258,18 @@ int le(megallo* csucs,megallo* csucsontul){
     {
         return 0;
     }
-    egyez=strcmp(dijk[index].megallok_nevei,csucs->megallo_nev);
-    egyez=strcmp(dijk[index].vonal,csucs->metro_vonal);
+    while(dijk[index].megallo!=csucs)
+    {
+        index++;  
+    }
     honnan=index;
-    while(egyez!=0)
-    {
-        index++;
-        egyez=strcmp(dijk[index].megallok_nevei,csucs->megallo_nev);
-        egyez=strcmp(dijk[index].vonal,csucsontul->metro_vonal);
-        honnan=index; 
-    }
     index=0;
-    egyez=strcmp(dijk[index].megallok_nevei,csucsontul->megallo_nev);
-    egyez=strcmp(dijk[index].vonal,csucsontul->metro_vonal);
-    hova=index;
-    while(egyez!=0)
+    while(dijk[index].megallo!=csucsontul)
     {
         index++;
-        egyez=strcmp(dijk[index].megallok_nevei,csucsontul->megallo_nev);
-        egyez=strcmp(dijk[index].vonal,csucsontul->metro_vonal);
-        hova=index;  
     }
-    if(dijk[hova].menetido<csucsontul->menetido_l+dijk[honnan].menetido || !dijk[hova].bejart){
+    hova=index;
+    if(!dijk[hova].bejart){
         dijk[hova].menetido=csucsontul->menetido_l+dijk[honnan].menetido;
         dijk[hova].bejart=1;
         dijk[hova].atszallasok_szama=dijk[honnan].atszallasok_szama;
@@ -314,25 +289,28 @@ megallo* csomopont(megallo* csucs,megallo** p){
         while(mozgo!=NULL){
             if(strcmp(csucs->megallo_nev,mozgo->megallo_nev)==0){
                 if(mozgo!=csucs){
-                    egyez=strcmp(dijk[index].megallok_nevei,csucs->megallo_nev);
-                    while(egyez!=0)
-                    {
-                        index++;
-                        egyez=strcmp(dijk[index].megallok_nevei,csucs->megallo_nev);
-                        honnan=index;  
-                    }
                     index=0;
-                    egyez=strcmp(dijk[index].megallok_nevei,mozgo->megallo_nev);
-                    while(egyez!=0)
+                    while(dijk[index].megallo!=mozgo)
                     {
                         index++;
-                        egyez=strcmp(dijk[index].megallok_nevei,mozgo->megallo_nev);
-                        hova=index;  
                     }
+                    if(dijk[index].bejart==1)break;
+                    index=0;
+                    while(dijk[index].megallo!=csucs)
+                    {
+                        index++;
+                    }
+                    honnan=index;
+                    index=0;
+                    while(dijk[index].megallo!=mozgo)
+                    {
+                        index++;
+                    }
+                    hova=index;
                     if(!dijk[hova].bejart){
                         dijk[hova].menetido=mozgo->atszallas+dijk[honnan].menetido;
                         dijk[hova].bejart=1;
-                        dijk[hova].atszallasok_szama=dijk[honnan].atszallasok_szama;
+                        dijk[hova].atszallasok_szama=dijk[honnan].atszallasok_szama+1;
                     }
                     return mozgo;
                 }
@@ -343,17 +321,22 @@ megallo* csomopont(megallo* csucs,megallo** p){
         }
         ind++;
     }
-    return csucs;
+    return NULL;
 }
 
-void menetrend(megallo** p,megallo* csucs){
+void vegigjar(megallo* csucs,int* index,megallo** atszallasok,megallo** p){
+    megallo* csucsontul=csucs;
     int irany=0;
     int felfele=1;
     int lefele=1;
-    megallo* csucsontul=csucs;
     if (irany==0)
     {
         while(felfele==1){
+            megallo* ideg=csomopont(csucsontul,p);
+            if(ideg!=NULL){
+                atszallasok[*index]=ideg;
+                *index+=1;
+            }
             felfele=fel(csucsontul,csucsontul->prev);
             csucsontul=csucsontul->prev;
         }
@@ -363,38 +346,31 @@ void menetrend(megallo** p,megallo* csucs){
     if (irany==1)
     {
         while(lefele==1){
+            megallo* ideg=csomopont(csucsontul,p);
+            if(ideg!=NULL){
+                atszallasok[*index]=ideg;
+                *index+=1;
+            }
             lefele=le(csucsontul,csucsontul->next);
             csucsontul=csucsontul->next;        
         }
         irany++;
     }
-    csucsontul=csucs;
-    megallo* ideiglenes=csucsontul;
-    lefele=1;
-    //átszállásos esetben//
-    while(csucsontul->prev!=NULL){
-         csucsontul=csomopont(csucsontul,p);
-        if(ideiglenes!=csucsontul){
-            while(lefele==1){
-            lefele=le(csucsontul,csucsontul->prev);
-            }
-        }
-        csucsontul=csucsontul->prev;
-        ideiglenes=csucsontul;
+}
+
+void menetrend(megallo* csucs,megallo** p){
+    int index=0;
+    megallo* atszallasok[300];
+    for (int i = 0; i < 300; i++)
+    {
+        atszallasok[i]=NULL;
     }
-    csucsontul=csucs;
-    felfele=1;
+    vegigjar(csucs,&index,atszallasok,p);
     //átszállásos esetben//
-    while(csucsontul->next!=NULL){
-        csucsontul=csomopont(csucsontul,p);
-        if(ideiglenes!=csucsontul){
-            while(lefele==1){
-            lefele=le(csucsontul,csucsontul->next);
-            csucsontul=csucsontul->next;
-            }
-        }
-        csucsontul=csucsontul->next;
-        ideiglenes=csucsontul;
+    int i=0;
+    while(atszallasok[i]!=NULL){
+        vegigjar(atszallasok[i],&index,atszallasok,p);
+        i++;
     }
 }
 
@@ -480,30 +456,29 @@ int kereses(megallo** p,megallo* ind, megallo* cel){
     printf("1.Igen.\n");
     printf("2.Vissza a menübe.\n");
     fflush(stdin);
+    fflush(stdin);
     int allapot = getc(stdin)-'0';
     fflush(stdin);
-    if (allapot!=1 && allapot!=2)
-    {
-        do
-        {
-            clear();
-            printf("Szeretnél keresést indítani ezekkel a megállókkal?\n");
-            printf("Indulási állomás:%s\n", ind->megallo_nev);
-            printf("Celállomás:%s\n\n", cel->megallo_nev);
-            printf("1.Igen.\n");
-            printf("2.Kilépés\n");
-            printf("Nincs ilyen opció!\nKérjük próbáld újra.\n");
-            allapot = getc(stdin)-'0';
-            fflush(stdin);
-        } while (allapot!=2 || allapot!=1);
-    }
-    if (allapot==1)
-    {
-        return 1;
-    }
-    else
-    {
-        freeway();
+    while(1){
+        switch(allapot){
+            case 1:
+                return 1;
+                break;
+            case 2:
+                freeway();
+                break;
+            default:
+                clear();
+                printf("Szeretnél keresést indítani ezekkel a megállókkal?\n");
+                printf("Indulási állomás:%s\n", ind->megallo_nev);
+                printf("Celállomás:%s\n\n", cel->megallo_nev);
+                printf("1.Igen.\n");
+                printf("2.Kilépés\n");
+                printf("Nincs ilyen opció!\nKérjük próbáld újra.\n");
+                allapot = getc(stdin)-'0';
+                fflush(stdin);
+                break;
+        }
     }
 }
 
@@ -519,7 +494,7 @@ void ido(megallo** p,megallo* cel){
         while(csucs!=NULL){
             if (strcmp(cel->megallo_nev,csucs->megallo_nev)==0)
             {
-                dijk[faszom].megallok_nevei=csucs->megallo_nev;
+                dijk[faszom].megallo=csucs;
             }
         }
     }
@@ -569,7 +544,7 @@ void menu(megallo** p){
     }
     clear();
     if(kereses(p,ind,celt)==1){
-        menetrend(p,ind);
+        menetrend(ind,p);
     }
     befejezo(p,celt);
 }
