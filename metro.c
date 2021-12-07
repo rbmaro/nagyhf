@@ -1,37 +1,89 @@
+/**
+ * @file
+ * @section LEÍRÁS
+ * A fájl kezeli a játék változóit, a menetét
+ * */
 #include <stdio.h>
 #include "string.h"
 #include "stdlib.h"
 
+/**A megállók adatait tároló struktúra**/
 typedef struct megallo{
+    //*A megálló neve*/
     char* megallo_nev;
+    //*A megállón átmenő metró*/
     char* metro_vonal;
+    //*Az átszálláshoz szükséges idő*/
     int atszallas;
+    //*A listában a megállóhoz közvetlen "felfele" lévő megálló eljutásához szükséges menetidő*/
     int menetido_f;
+    //*A listában a megállóhoz közvetlen "lefele" lévő megálló eljutásához szükséges menetidő*/
     int menetido_l;
+    //*A megállóhoz tartozó előző és következő megállóra mutató pointer*/
     struct megallo *next, *prev;
 }megallo;
 
+/**A dijkstra algoritmushoz kellő adatat tároló struktúra **/
 typedef struct dijkstra{
+    //*az egy megállóra mutató pointer*/
     megallo* megallo;
+    //*A megállóhoz szükséges menetidő*/ 
     int menetido;
+    //*Amegállóhoz való eljutáshoz kellő átszállások száma*/
     int atszallasok_szama;
+    //*Az átszállóhelyek neve*/
+    char* atszallasok[16];
+    //*Megmutatja, hogy a megálló be volt-e már járva*/
     int bejart;
 }dijkstra;
 
+//*Dijksra struktúrához tartozó globális változó*/
 dijkstra dijk[500];
 
+/**
+ * Kitörli a cmd-t
+ * @return nincs
+ */
 void clear(){
-    system("clear");
+    system("cls");
 }
 
-int freeway(){
+/**
+ * Felszabadítja a memóriát
+ * @param p-re lett foglalva a memória 
+ * @return A kilépés helyes értéke 1
+ */
+int freeway(megallo** p){
+    int index=0;
+    while(index<sizeof(p)/2){
+        free(p[index]->metro_vonal);
+        while(p[index]!=NULL){
+            megallo* szabad=p[index];
+            p[index]=p[index]->next;
+            free(szabad->megallo_nev);
+            free(szabad);
+        }
+        index++;
+    }
+    free(p);
     exit(1);
 }
 
+/**
+ * Megnyitja a bemeneti fájlokat
+ * @param file Egy bemeneti fájl
+ * @return Az első bemeneti fájt adja vissza 
+ */
 FILE* metro_megnyito(char* file){
     return fopen(file,"r");
 }
 
+/**
+ * Lefoglalja a programnak dinamikusan a memóriahelyeket
+ * @param p-re lesz foglalva a memórai
+ * @param metro_szam A fájlban szereplő összes metró darabszáma
+ * @return A metrókat tartalmazó tömb 
+ */
 megallo** metro_foglalo(megallo **p,int metro_szam){
     if(metro_szam==1){
         p=(megallo**)malloc(metro_szam*sizeof(megallo*));
@@ -50,6 +102,12 @@ megallo** metro_foglalo(megallo **p,int metro_szam){
     }
 }
 
+/**
+ * Beláncolja a struktúrát
+ * @param uj Az uj megálló neve
+ * @param elem A metró vonal következő megállója
+ * @return Az új megálló neve 
+ */
 megallo* lancolo(char* uj,megallo* elem){
     megallo* nev=(megallo*)malloc(sizeof(megallo));
     if(strlen(uj)==2) {
@@ -80,10 +138,16 @@ megallo* lancolo(char* uj,megallo* elem){
     }
 }
 
+/**
+ * Beirja a 2.bemeneti fájl adatait//
+ * @param t1 A megálló neve
+ * @param t2 A menetidőtket és az átszállást tartalmazó tömb
+ * @param elem Megálló neve
+ * @return Nincs
+ */
 void lancolo2(char* t1,int* t2, megallo* elem)
 {
     int beirt=0;
-    int nevek;
     int hely=0;
     while (beirt == 0)
     {
@@ -101,6 +165,12 @@ void lancolo2(char* t1,int* t2, megallo* elem)
     }
 }
 
+/**
+ * Beírja a listába az 1. bemeneti fájl adatait 
+ * @param p Az adatokat tartalmazó lista
+ * @param fajl Az első bemeneti fájl
+ * @return A metrókat tartalmazó tömb
+ */
 megallo** metro_beiro1(megallo** p, FILE* fajl){
     int metrok_szama=0;
     p[metrok_szama]=NULL;
@@ -134,6 +204,12 @@ megallo** metro_beiro1(megallo** p, FILE* fajl){
     return p;
 }
 
+/**
+ * Beírja a 2. bemeneti fájl adatait
+ * @param p A metrókat tartalmazó tömb
+ * @param fajl A 2. bemeneti fájl neve
+ * @return A metrókat tartalmazó tömb
+ */
 megallo** metro_beiro2(megallo** p, FILE* fajl){
     char nev[50]={0};
     int idok[3]={0};
@@ -186,8 +262,14 @@ megallo** metro_beiro2(megallo** p, FILE* fajl){
     return p;
 }
 
+/**
+ * Előkészíti a Dijkstra algoritmust
+ * @param p A metrókat tartalmazó tömb
+ * @param indulas Az induló megálló neve
+ * @return Az egyező megálló neve 
+ */
 megallo* elokeszito(megallo **p, char* indulas){
-    int faszom=0;  
+    int sorszam=0;  
     int index=0;
     int egyezes=0;
     megallo* csucs;
@@ -198,21 +280,29 @@ megallo* elokeszito(megallo **p, char* indulas){
         while(csucs!=NULL){
             if (strcmp(indulas, csucs->megallo_nev)==0)
             {
-                dijk[faszom].megallo=csucs;
-                dijk[faszom].menetido=0;
-                dijk[faszom].atszallasok_szama=0;
-                dijk[faszom].bejart=0;
+                dijk[sorszam].megallo=csucs;
+                dijk[sorszam].menetido=0;
+                dijk[sorszam].atszallasok_szama=0;
+                dijk[sorszam].bejart=0;
+                for (int i = 0; i < 16; i++)
+                {
+                    dijk[sorszam].atszallasok[i]="\0";
+                }
                 egyezes=1;
                 ki=csucs;
             }
             else
             {
-                dijk[faszom].megallo=csucs;
-                dijk[faszom].menetido=1000;
-                dijk[faszom].atszallasok_szama=0;
-                dijk[faszom].bejart=0;
+                dijk[sorszam].megallo=csucs;
+                dijk[sorszam].menetido=1000;
+                dijk[sorszam].atszallasok_szama=0;
+                dijk[sorszam].bejart=0;
+                for (int i = 0; i < 16; i++)
+                {
+                    dijk[sorszam].atszallasok[i]="\0";
+                }
             }
-            faszom++;
+            sorszam++;
             csucs=csucs->next;
         }
         index++;
@@ -221,6 +311,12 @@ megallo* elokeszito(megallo **p, char* indulas){
     else return NULL;
 }
 
+/**
+ * Dijkstra a listában feljebb lévő elemekre
+ * @param csucs Az állomás neve
+ * @param csucsontul A csúcshoz képest a következő állomás a listában felfele
+ * @return A függvény helyes return értéke 1 
+ */
 int fel(megallo* csucs,megallo* csucsontul){
     int index=0;
     int honnan;
@@ -241,14 +337,26 @@ int fel(megallo* csucs,megallo* csucsontul){
         index++;
     }
     hova=index;
-    if(!dijk[hova].bejart){
+    if(!dijk[hova].bejart || dijk[hova].menetido>csucsontul->menetido_f+dijk[honnan].menetido){
         dijk[hova].menetido=csucsontul->menetido_f+dijk[honnan].menetido;
         dijk[hova].bejart=1;
         dijk[hova].atszallasok_szama=dijk[honnan].atszallasok_szama;
+        for (int i = 0; i < 16; i++)
+        {   
+            if(dijk[honnan].atszallasok[i]=="\0")break;   
+            dijk[hova].atszallasok[i]=dijk[honnan].atszallasok[i];
+        }
+
     }
     return 1;
 }
 
+/**
+ * Dijkstra a listában lejjebb lévő elemekre
+ * @param csucs Az állomás neve
+ * @param csucsontul A csúcshoz képest a következő állomást a listában lefele
+ * @return A függvény helyes kimeneti értéke 1
+ */
 int le(megallo* csucs,megallo* csucsontul){
     int index=0;
     int honnan;
@@ -269,15 +377,44 @@ int le(megallo* csucs,megallo* csucsontul){
         index++;
     }
     hova=index;
-    if(!dijk[hova].bejart){
+    if(!dijk[hova].bejart || dijk[hova].menetido>csucsontul->menetido_l+dijk[honnan].menetido){
         dijk[hova].menetido=csucsontul->menetido_l+dijk[honnan].menetido;
         dijk[hova].bejart=1;
         dijk[hova].atszallasok_szama=dijk[honnan].atszallasok_szama;
+        for (int i = 0; i < 16; i++)
+        {      
+            if(dijk[honnan].atszallasok[i]=="\0")break;   
+            dijk[hova].atszallasok[i]=dijk[honnan].atszallasok[i];
+        }
     }
     return 1;
 }
 
-megallo* csomopont(megallo* csucs,megallo** p){
+/**
+ * A megálló benne van-e már az átszállásokban
+ * @param atszallasok Az átszállásokat tartalmazó tömb 
+ * @param atszallas A megálló
+ * @return Ha már benne van, akkor a helyes return érték 1, ha nem, akkor 0 
+ */
+int benne(megallo** atszallasok,megallo* atszallas){
+    int i=0;
+    while(atszallasok[i]!=0){
+        if(strcmp(atszallas->megallo_nev,atszallasok[i]->megallo_nev)==0){
+            return 1;
+        }
+        i++;
+    }
+    return 0;
+}
+
+/**
+ * Átszállás helyeket keres
+ * @param csucs A megálló neve
+ * @param p A metrókat tartalmazó tömb
+ * @param atszallasok Az átszállásokat tartalazó tömb
+ * @return visszaadja a megállót ahol van átszállás 
+ */
+megallo* csomopont(megallo* csucs,megallo** p,megallo** atszallasok){
     int ind=0;
     int index=0;
     int egyez=1;
@@ -308,9 +445,26 @@ megallo* csomopont(megallo* csucs,megallo** p){
                     }
                     hova=index;
                     if(!dijk[hova].bejart){
-                        dijk[hova].menetido=mozgo->atszallas+dijk[honnan].menetido;
+                        if(benne(atszallasok,dijk[hova].megallo)){
+                            dijk[hova].atszallasok_szama=dijk[honnan].atszallasok_szama;
+                            dijk[hova].menetido=dijk[honnan].menetido;
+                            for (int i = 0; i < 16; i++)
+                            {      
+                                if(dijk[honnan].atszallasok[i]=="\0")break;   
+                                dijk[hova].atszallasok[i]=dijk[honnan].atszallasok[i];
+                            }
+                        }
+                        else{
+                            dijk[hova].atszallasok_szama=dijk[honnan].atszallasok_szama+1;
+                            dijk[hova].menetido=mozgo->atszallas+dijk[honnan].menetido;
+                            for (int i = 0; i < 16; i++)
+                            {      
+                                if(dijk[honnan].atszallasok[i]=="\0")break;   
+                                dijk[hova].atszallasok[i]=dijk[honnan].atszallasok[i];
+                            }
+                            dijk[hova].atszallasok[dijk[hova].atszallasok_szama-1]=dijk[hova].megallo->megallo_nev;
+                        }
                         dijk[hova].bejart=1;
-                        dijk[hova].atszallasok_szama=dijk[honnan].atszallasok_szama+1;
                     }
                     return mozgo;
                 }
@@ -321,9 +475,15 @@ megallo* csomopont(megallo* csucs,megallo** p){
         }
         ind++;
     }
-    return NULL;
 }
 
+/**
+ * A dijkstra algoritmus irányításáért felelős függvény
+ * @param csucs A megálló neve
+ * @param index index
+ * @param atszallasok A átszállásokat tartalmazó tömb
+ * @param p A metrókat tartalmazó tömb
+ */
 void vegigjar(megallo* csucs,int* index,megallo** atszallasok,megallo** p){
     megallo* csucsontul=csucs;
     int irany=0;
@@ -332,9 +492,9 @@ void vegigjar(megallo* csucs,int* index,megallo** atszallasok,megallo** p){
     if (irany==0)
     {
         while(felfele==1){
-            megallo* ideg=csomopont(csucsontul,p);
-            if(ideg!=NULL){
-                atszallasok[*index]=ideg;
+            megallo* ideiglenes=csomopont(csucsontul,p,atszallasok);
+            if(ideiglenes!=NULL){
+                atszallasok[*index]=ideiglenes;
                 *index+=1;
             }
             felfele=fel(csucsontul,csucsontul->prev);
@@ -346,9 +506,9 @@ void vegigjar(megallo* csucs,int* index,megallo** atszallasok,megallo** p){
     if (irany==1)
     {
         while(lefele==1){
-            megallo* ideg=csomopont(csucsontul,p);
-            if(ideg!=NULL){
-                atszallasok[*index]=ideg;
+            megallo* ideiglenes=csomopont(csucsontul,p,atszallasok);
+            if(ideiglenes!=NULL){
+                atszallasok[*index]=ideiglenes;
                 *index+=1;
             }
             lefele=le(csucsontul,csucsontul->next);
@@ -358,6 +518,12 @@ void vegigjar(megallo* csucs,int* index,megallo** atszallasok,megallo** p){
     }
 }
 
+/**
+ * Maga a Dijkstra algoritmus
+ * @param csucs A megálló neve
+ * @param p A metrókat tartalmazó tömb
+ * @return Nincs
+ */
 void menetrend(megallo* csucs,megallo** p){
     int index=0;
     megallo* atszallasok[300];
@@ -366,7 +532,6 @@ void menetrend(megallo* csucs,megallo** p){
         atszallasok[i]=NULL;
     }
     vegigjar(csucs,&index,atszallasok,p);
-    //átszállásos esetben//
     int i=0;
     while(atszallasok[i]!=NULL){
         vegigjar(atszallasok[i],&index,atszallasok,p);
@@ -374,6 +539,11 @@ void menetrend(megallo* csucs,megallo** p){
     }
 }
 
+/**
+ * Az induló állomás kiválasztásáért felelős függvény
+ * @param p A metrókat tartalmazó tömb
+ * @return Az induló állomás neve
+ */
 megallo* kivalaszto1(megallo** p){
     clear();
     printf("Honnan szeretnél indulni?\n");
@@ -384,7 +554,6 @@ megallo* kivalaszto1(megallo** p){
     megallo* ki=elokeszito(p,indulo_allomas);
     if (ki!=NULL)
     {
-        printf("jó a név");
     }
     else
     {
@@ -400,21 +569,27 @@ megallo* kivalaszto1(megallo** p){
     return ki;
 }
 
+/**
+ * A célállomás létezéséért felelős függvény
+ * @param p A metrókat tartalmazó tömb
+ * @param cel A cél állomás neve
+ * @return A célállomás neve,ha létezik
+ */
 megallo* letezike(megallo** p, char* cel){
     int index=0;
     int egyezes=0;
-    int faszomgeci;
+    int sorszamok;
     megallo* megallo;
     megallo=p[index];
     while (p[index]!=NULL)
     {
         megallo=p[index];
-        faszomgeci=strcmp(cel,megallo->megallo_nev);
-        if(faszomgeci==0)return megallo;
-        while (faszomgeci!=0)
+        sorszamok=strcmp(cel,megallo->megallo_nev);
+        if(sorszamok==0)return megallo;
+        while (sorszamok!=0)
         {
-            faszomgeci=strcmp(cel,megallo->megallo_nev);
-            if(faszomgeci==0)return megallo;
+            sorszamok=strcmp(cel,megallo->megallo_nev);
+            if(sorszamok==0)return megallo;
             else megallo=megallo->next;
             if(megallo==NULL) break;
         }
@@ -423,6 +598,11 @@ megallo* letezike(megallo** p, char* cel){
     return NULL;
 }
 
+/**
+ * A célállomást kiválasztó függvény
+ * @param p A metrókat tartalmazó tömb
+ * @return A célállomás neve
+ */
 megallo* kivalaszto2(megallo** p){
     clear();
     printf("Hova szeretnél menni?\n");
@@ -432,7 +612,6 @@ megallo* kivalaszto2(megallo** p){
     scanf("%s",&celallomas);
     megallo* cel=letezike(p,celallomas);
     if(cel!=NULL){
-        printf("jó a név");
     }
     else
     {
@@ -448,6 +627,13 @@ megallo* kivalaszto2(megallo** p){
     return cel;
 }
 
+/**
+ * A végső keresésért felelős függvény
+ * @param p A metrókat tartalmazó tömb
+ * @param ind Az induló állomás neve
+ * @param cel A célállomás neve
+ * @return megadja futhat e tovább a program
+ */
 int kereses(megallo** p,megallo* ind, megallo* cel){
     clear();
     printf("Szeretnél keresést indítani ezekkel a megállókkal?\n");
@@ -465,7 +651,8 @@ int kereses(megallo** p,megallo* ind, megallo* cel){
                 return 1;
                 break;
             case 2:
-                freeway();
+                clear();
+                menu(p);
                 break;
             default:
                 clear();
@@ -482,33 +669,53 @@ int kereses(megallo** p,megallo* ind, megallo* cel){
     }
 }
 
-void ido(megallo** p,megallo* cel){
-    int index=0;
-    char geci;
-    int faszom=0;  
-    megallo* csucs;
-    megallo* ki=NULL;
-    while (p[index]!=NULL)
-    {
-        csucs=p[index];
-        while(csucs!=NULL){
-            if (strcmp(cel->megallo_nev,csucs->megallo_nev)==0)
-            {
-                dijk[faszom].megallo=csucs;
-            }
-        }
+/**
+ * A kimeneti értékek kiírásáért felelős függvény
+ * @param p A metrókat tartalmazó tömb
+ * @param cel A célállomás neve
+ * @return nincs
+ */
+void befejezes(megallo** p,megallo* cel){
+    int sorszam=0;
+    int allapot=0;
+    int str;
+    while(cel!=dijk[sorszam].megallo){
+        sorszam++;
     }
-    printf("Menetidő:%d", dijk[faszom].menetido);
-    scanf("%c", &geci);
+    printf("Átszállások:");
+    for (int i = 0; i < dijk[sorszam].atszallasok_szama; i++)
+    {
+        printf(" %s",dijk[sorszam].atszallasok[i]);
+    }
+    printf("\nMenetidő:%d perc\n", dijk[sorszam].menetido);
+    printf("\nnyomj spacet a kilépéshez");
+    char kilep=getc(stdin);
+    while (kilep!=' ')
+    {
+        kilep=getc(stdin);
+    }
 }
 
+/**
+ * A program befejezését elindító függgvény
+ * @param p A metrókat tartalmazó tömb
+ * @param cel A cél állomás neve
+ * @return nincs
+ */
 void befejezo(megallo** p,megallo* cel){
-    ido(p,cel);
+    befejezes(p,cel);
+    freeway(p);
 }
 
+/**
+ * A menük készítő függvény
+ * @param p A metrókat tartalmazó tömb
+ * @return nincs
+ */
 void menu(megallo** p){
     megallo* ind;
     megallo* celt;
+    megallo* atszallas;
     printf("Üdvözöllek a Metróban!\n");
     printf("A program megmutatja, mennyi idő eljutni A-ból, B-be,\n");
     printf("illetve hol kell átszállni.\n\n");
@@ -517,30 +724,19 @@ void menu(megallo** p){
     printf("2.Kilépés\n");
     int menuk = getc(stdin)-'0';
     fflush(stdin);
-    if (menuk!=1 && menuk!=2)
-    {
-        do
-        {
+    switch(menuk){
+        case 1:
+            ind=kivalaszto1(p);
+            celt=kivalaszto2(p);
+            break;
+        case 2:
+            freeway(p);
+            break;
+        default:
             clear();
-            printf("Üdvözöllek a Metróban!\n");
-            printf("A program megmutatja, mennyi idő eljutni A-ból, B-be,\n");
-            printf("illetve hol kell átszállni.\n\n");
-            printf("Kérjük válaszon!\n");
-            printf("1.Keresés indítása\n");
-            printf("2.Kilépés\n");
             printf("Nincs ilyen opció!\nKérjük próbáld újra.\n");
-            menuk = getc(stdin)-'0';
-            fflush(stdin);
-        } while (menuk!=2 || menuk!=1);
-    }
-    if (menuk==1)
-    {
-        ind=kivalaszto1(p);
-        celt=kivalaszto2(p);
-    }
-    else
-    {
-        freeway();
+            menu(p);
+            break;
     }
     clear();
     if(kereses(p,ind,celt)==1){
@@ -549,6 +745,10 @@ void menu(megallo** p){
     befejezo(p,celt);
 }
 
+/**
+ * Main függvény
+ * @return nincs, mert a program egy másik függvénnyel fejeződik be
+ */
 int main(){
     system("chcp 65001");
     clear();
@@ -559,5 +759,4 @@ int main(){
     FILE* metrok_file2=metro_megnyito("bemeneti2.txt");
     metro=metro_beiro2(metro,metrok_file2);
     menu(metro);
-    freeway();
 }
